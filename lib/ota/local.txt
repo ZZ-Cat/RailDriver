@@ -661,9 +661,11 @@ function void otaLocalFileLoadedHandler(Ota:table)
                     print("Version file updated. Please wait while RailDriver restarts...")
 
                     # Restart RailDriver.
+                    #[ DEPRECATED
                     runOnChat(0)
                     runOnTick(0)
                     runOnKeys(owner(), 0)
+                    ]#
                     stopAllTimers()
                     timer("Restart", 2000)
                 }
@@ -784,9 +786,11 @@ function void otaLocalFileLoadedHandler(Ota:table)
                     # Abort the update process.
                     Ota["Flags", table]["Update Process Started", number] = 0
                     print("Update aborted.\nRailDriver is already up-to-date. Please wait while RailDriver restarts...")
+                    #[ DEPRECATED
                     runOnChat(0)
                     runOnTick(0)
                     runOnKeys(owner(), 0)
+                    ]#
                     stopAllTimers()
                     timer("Restart", 5000)
                 }
