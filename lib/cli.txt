@@ -713,7 +713,7 @@ function number cliProcessMessage(Cli:table, Message:string)
 #        The type is case-insensitive, and the message type is automatically capitalised.
 # @param Message The message to print.
 # @return true if the message was printed successfully, false otherwise.
-function number cliPrintToChat(Cli:table, Source:string, Type:string, Message:string)
+function number cliPrintToChat(Cli:table, _:string, _:string, Message:string)
 {
     local Item = table()
 
