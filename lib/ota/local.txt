@@ -291,11 +291,10 @@ function void otaLocalLoadFileHandler(Ota:table)
 
 # This function is used internally to check if the current player is a developer.
 # It should not be called directly by RailDriver.
-# @param Ota A handle to the OTA library.
 # @param Data:table The data to use as a reference against the Player.
 # @param Player:entity The player to check.
 # @return number 1 if the player is a developer, 0 otherwise.
-function number otaLocalPlayerIsDeveloper(Ota:table, Data:table, Player:entity)
+function number otaLocalPlayerIsDeveloper(Data:table, Player:entity)
 {
     local ThisPerson = Player
     local ThisPersonSteamID = ThisPerson:steamID()
@@ -653,7 +652,7 @@ function void otaLocalFileLoadedHandler(Ota:table)
             # Check if the version file is valid.
             if (otaLocalIsVersionFileValid(Ota, FileContents) != 1)
             {
-                if (otaLocalPlayerIsDeveloper(Ota, FileContentsTable, owner()) == 1)
+                if (otaLocalPlayerIsDeveloper(FileContentsTable, owner()) == 1)
                 {
                     # Update the hash at the end of the Version File.
                     otaLocalUpdateVersionFileHash(Ota, FileContents)
