@@ -108,7 +108,6 @@ function number otaOnlineUpdateRailDriver(OtaOnline:table, OtaLocal:table)
     local Branch = ""
     local Path = ""
     local File = ""
-    local URL = ""
 
     Username = OtaLocal["RailDriver", table]["Developers", table]["Owner", table]["Social", table]["GitHub", table]["Username", string]
     Repository = OtaLocal["RailDriver", table]["Main", table]["File", string]:explode(".")[1, string]
