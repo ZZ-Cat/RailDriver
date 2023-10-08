@@ -6,7 +6,7 @@
             "Name": "RailDriver",
             "Description": "Smart locomotive controller script for Garry's Mod train build servers.",
             "Author": "Cassandra \"ZZ Cat\" Robinson",
-            "Copyright":"(c) 2022, Cassandra \"ZZ Cat\" Robinson. All rights reserved.",
+            "Copyright":"(c) 2023, Cassandra \"ZZ Cat\" Robinson. All rights reserved.",
             "License":"GNU Affero General Public License v3.0",
             "Source Code":"https://github.com/ZZ-Cat/RailDriver"
         },
@@ -14,8 +14,8 @@
         {
             "File":"RailDriver.txt",
             "Path":"e2shared/RailDriver",
-            "Version":"0.1.0",
-            "Hash":"406490754"
+            "Version":"1.0.0",
+            "Hash":"4120623202"
         },
         "Libraries":
         {
@@ -23,8 +23,8 @@
             {
                 "File":"cli.txt",
                 "Path":"e2shared/RailDriver/lib",
-                "Version":"0.1.0",
-                "Hash":"4172675305"
+                "Version":"1.0.0",
+                "Hash":"679500435"
             },
             "Controls":
             {
@@ -32,8 +32,8 @@
                 {
                     "File":"playerControls.txt",
                     "Path":"e2shared/RailDriver/lib/controls",
-                    "Version":"0.1.0",
-                    "Hash":"1319316940"
+                    "Version":"1.0.0",
+                    "Hash":"2357248478"
                 }
             },
             "Over-The-Air Updates":
@@ -42,23 +42,23 @@
                 {
                     "File":"local.txt",
                     "Path":"e2shared/RailDriver/lib/ota",
-                    "Version":"0.1.0",
-                    "Hash":"1906577484"
+                    "Version":"1.0.0",
+                    "Hash":"2047577597"
                 },
                 "Online":
                 {
                     "File":"remote.txt",
                     "Path":"e2shared/RailDriver/lib/ota",
-                    "Version":"0.1.0",
-                    "Hash":"1897755937"
+                    "Version":"1.0.0",
+                    "Hash":"3213733866"
                 }
             },
             "PIDF Controller":
             {
                 "File":"pidf.txt",
                 "Path":"e2shared/RailDriver/lib",
-                "Version":"0.1.0",
-                "Hash":"1536874832"
+                "Version":"1.0.0",
+                "Hash":"4136375892"
             },
             "Sensors":
             {
@@ -66,30 +66,30 @@
                 {
                     "File":"ndof.txt",
                     "Path":"e2shared/RailDriver/lib/sensors",
-                    "Version":"0.1.0",
+                    "Version":"1.0.0",
                     "Hash":""
                 },
                 "Speedometer":
                 {
                     "File":"speedometer.txt",
                     "Path":"e2shared/RailDriver/lib/sensors",
-                    "Version":"0.1.0",
-                    "Hash":"2121051767"
+                    "Version":"1.0.0",
+                    "Hash":"3310065329"
                 }
             },
             "Smart Entity Management":
             {
                 "File":"smartEntityManagement.txt",
                 "Path":"e2shared/RailDriver/lib",
-                "Version":"0.1.0",
-                "Hash":"1288505457"
+                "Version":"1.0.0",
+                "Hash":"2726114912"
             },
             "Timers":
             {
                 "File":"timers.txt",
                 "Path":"e2shared/RailDriver/lib",
-                "Version":"0.1.0",
-                "Hash":"451546757"
+                "Version":"1.0.0",
+                "Hash":"3290591454"
             }
         },
         "Developers":
@@ -116,6 +116,6 @@
                 }
             }
         },
-        "Hash":"3364137609"
+        "Hash":"3642712657"
     }
 }

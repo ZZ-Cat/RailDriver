@@ -2,7 +2,7 @@
     This script header is a part of the RailDriver project.
 
     RailDriver. Smart Locomotive Control script for Garry's Mod Train Build Servers.
-    Copyright © 2022, Cassandra "ZZ Cat" Robinson. All rights reserved.
+    Copyright © 2023, Cassandra "ZZ Cat" Robinson. All rights reserved.
 
     This E2 script is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as published by
