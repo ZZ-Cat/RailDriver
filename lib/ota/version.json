@@ -15,7 +15,7 @@
             "File":"RailDriver.txt",
             "Path":"e2shared/RailDriver",
             "Version":"1.0.0",
-            "Hash":"819511099"
+            "Hash":"1658429753"
         },
         "Libraries":
         {
@@ -33,7 +33,7 @@
                     "File":"playerControls.txt",
                     "Path":"e2shared/RailDriver/lib/controls",
                     "Version":"1.0.0",
-                    "Hash":"2357248478"
+                    "Hash":"2503332910"
                 }
             },
             "Over-The-Air Updates":

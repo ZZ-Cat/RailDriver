@@ -659,7 +659,6 @@ function table playerControlsInit(KeyboardControls:table, ThrottleMap:table, Bra
     Controls["Flags", table]["Ditch Lights is Updated", number] = 0
     Controls["Flags", table]["Player Controls Updated", number] = 0
 
-    runOnKeys(Controls["TrainDriver", entity], 1)
     return Controls
 }
 
