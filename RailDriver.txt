@@ -27,6 +27,7 @@
 @persist EmBrakeState EmBrakeThisSpeed EmBrakeLastSpeed EmBrakeObserverTickInterval EmBrakePCFaultTimeoutSet
 @persist Speed SpeedAbs SpeedMPH
 @persist DupeTickInterval DupeIsLoading DupeIsFinished RailDriverState
+@persist RunOnTick
 @outputs Debugger:table DbgAcceleration:vector [DbgAngularVelocity DbgOrientation]:angle DbgGradient DbgHillClimbDescentFF
 @strict
 
@@ -239,7 +240,7 @@ if (RailDriverState == 1)
             assert(pidSetOutputLimits(PIDF, -PIDOutputLimit, PIDOutputLimit) == 1, "Failed to set the PIDF Controller's output limits.")
 
             # Enable the PIDF Controller.
-            runOnTick(1)
+            RunOnTick = 1
         }
 
         else 
@@ -291,7 +292,7 @@ if (RailDriverState == 1)
         RailDriverState = 0
         stopAllTimers()
         runOnKeys(TrainDriver, 0)
-        runOnTick(0)
+        RunOnTick = 0
         printColor(vec(255, 0, 0), "[RailDriver | Init | Error]", vec(255, 255, 255), ": " + Exception)
     }
 }
@@ -476,7 +477,7 @@ elseif (RailDriverState == 2)
                         if (otaLocalUpdateRailDriver(OTALocal) == 1)
                         {
                             #runOnChat(0)
-                            runOnTick(0)
+                            RunOnTick = 0
                             runOnKeys(TrainDriver, 0)
                             timer("OTA Updates Watchdog", 10000)
                         }
@@ -505,7 +506,7 @@ elseif (RailDriverState == 2)
                         if (otaOnlineUpdateRailDriver(OTAOnline, OTALocal) == 1)
                         {
                             runOnChat(0)
-                            runOnTick(0)
+                            RunOnTick = 0
                             runOnKeys(TrainDriver, 0)
                             timer("OTA Updates Watchdog", 10000)
                         }
@@ -627,98 +628,101 @@ elseif (RailDriverState == 2)
         }
     }
 
-    if (tickClk())
+    if (RunOnTick != 0)
     {
-        try
+        event tick()
         {
-            # Set the Hill Climb/Descent Feedforward input to the PIDF controller.
-            pidSetHillClimbDescentFeedforward(PIDF, HillClimbDescentData)
+            try
+            {
+                # Set the Hill Climb/Descent Feedforward input to the PIDF controller.
+                pidSetHillClimbDescentFeedforward(PIDF, HillClimbDescentData)
 
-            # Debug.
-            DbgHillClimbDescentFF = pidGetFFhillClimbDescent(PIDF)
+                # Debug.
+                DbgHillClimbDescentFF = pidGetFFhillClimbDescent(PIDF)
 
-            # Calculate the PIDF controller's output.
-            pidCalculate(PIDF) # <--- This is where the magick happens. =^/,..,^=
+                # Calculate the PIDF controller's output.
+                pidCalculate(PIDF) # <--- This is where the magick happens. =^/,..,^=
 
-            # Get the PIDF controller's output.
-            # This is the throttle and brake values that will be applied to the locomotive.
-            local PIDFOutput = pidGetOutput(PIDF)
+                # Get the PIDF controller's output.
+                # This is the throttle and brake values that will be applied to the locomotive.
+                local PIDFOutput = pidGetOutput(PIDF)
 
-            #[ Bypass all of this for now. ]#
-            #[
-                # Set the throttle and brake values based on the PIDF controller's output and the current reverser position.
-                if (Reverser == 1)
+                #[ Bypass all of this for now. ]#
+                #[
+                    # Set the throttle and brake values based on the PIDF controller's output and the current reverser position.
+                    if (Reverser == 1)
+                    {
+                        Throttle = PIDFOutput
+                        Brake = 0
+                    }
+
+                    elseif (Reverser == -1)
+                    {
+                        Throttle = 0
+                        Brake = PIDFOutput
+                    }
+
+                    else
+                    {
+                        Throttle = 0
+                        Brake = 0
+                    }
+
+                    # Apply the throttle, brake, and reverser values to the locomotive's traction motors.
+                    semControlTrucks(Trucks, Throttle, Brake, Reverser)
+                ]#
+
+                # Set the brakes, if the train is not moving & the setpoint is 0.
+                # This is to prevent the train from rolling away. Fixes #65.
+                if (SpeedAbs == 0 & pidGetSetPoint(PIDF) == 0)
                 {
-                    Throttle = PIDFOutput
-                    Brake = 0
-                }
-
-                elseif (Reverser == -1)
-                {
-                    Throttle = 0
-                    Brake = PIDFOutput
+                    # Set the train brakes to 100%.
+                    semDirectControlBrakes(Trucks, 1)
                 }
 
                 else
                 {
-                    Throttle = 0
-                    Brake = 0
+                    # Release the brakes, if the Emergency Brake is not active.
+                    if (EmBrakeState == 0)
+                    {
+                        # Set the train brakes to 0%.
+                        semDirectControlBrakes(Trucks, 0)
+                    }
                 }
 
-                # Apply the throttle, brake, and reverser values to the locomotive's traction motors.
-                semControlTrucks(Trucks, Throttle, Brake, Reverser)
-            ]#
-
-            # Set the brakes, if the train is not moving & the setpoint is 0.
-            # This is to prevent the train from rolling away. Fixes #65.
-            if (SpeedAbs == 0 & pidGetSetPoint(PIDF) == 0)
-            {
-                # Set the train brakes to 100%.
-                semDirectControlBrakes(Trucks, 1)
-            }
-
-            else
-            {
-                # Release the brakes, if the Emergency Brake is not active.
-                if (EmBrakeState == 0)
+                # Apply the PIDF Controller's output directly to the locomotive's traction motors.
+                if (!semDirectControlTrucks(Trucks, PIDFOutput))
                 {
-                    # Set the train brakes to 0%.
-                    semDirectControlBrakes(Trucks, 0)
+                    #[ 
+                        Notes from ZZ Cat:
+                        When 'semDirectControlTrucks()' returns false, the control loop is disabled.
+                        The E2 is also unlocked, so you can edit or remove it.
+                        This is to prevent the E2 from being locked forever.
+
+                        Through testing, I found a few things:
+                        - If the trucks are removed from the locomotive, 'semDirectControlTrucks()' will return false.
+                        & the speedometer will show an "Invalid entity!" error.
+                        - If the entire locomotive is removed from the world, 'semDirectControlTrucks()' will return false.
+                        & the error below will be printed.
+                    ]#
+
+                    # If the E2 is locked, unlock it.
+                    # This is to prevent the E2 from being locked forever.
+                    RunOnTick = 0
+                    if (semE2IsLocked())
+                    {
+                        semUnlockE2()
+                    }
+
+                    # Print an error message.
+                    error("Failed to apply PIDF controller's output to locomotive's traction motors.")
                 }
             }
 
-            # Apply the PIDF Controller's output directly to the locomotive's traction motors.
-            if (!semDirectControlTrucks(Trucks, PIDFOutput))
+            catch (Exception)
             {
-                #[ 
-                    Notes from ZZ Cat:
-                    When 'semDirectControlTrucks()' returns false, the control loop is disabled.
-                    The E2 is also unlocked, so you can edit or remove it.
-                    This is to prevent the E2 from being locked forever.
-
-                    Through testing, I found a few things:
-                    - If the trucks are removed from the locomotive, 'semDirectControlTrucks()' will return false.
-                    & the speedometer will show an "Invalid entity!" error.
-                    - If the entire locomotive is removed from the world, 'semDirectControlTrucks()' will return false.
-                    & the error below will be printed.
-                ]#
-
-                # If the E2 is locked, unlock it.
-                # This is to prevent the E2 from being locked forever.
-                runOnTick(0)
-                if (semE2IsLocked())
-                {
-                    semUnlockE2()
-                }
-
-                # Print an error message.
-                error("Failed to apply PIDF controller's output to locomotive's traction motors.")
+                printColor(vec(255, 0, 0), "[RailDriver | PID | Error]", vec(255, 255, 255), ": " + Exception)
             }
-        }
-
-        catch (Exception)
-        {
-            printColor(vec(255, 0, 0), "[RailDriver | PID | Error]", vec(255, 255, 255), ": " + Exception)
         }
     }
 
@@ -950,7 +954,7 @@ elseif (RailDriverState == 2)
                 # Disable the PIDF controller.
                 pidSetMode(PIDF, "Manual")
                 pidSetOutput(PIDF, 0)
-                runOnTick(0)
+                RunOnTick = 0
 
                 # Set the locomotive's traction motors to 0.
                 semDirectControlTrucks(Trucks, 0)
@@ -1007,7 +1011,7 @@ elseif (RailDriverState == 2)
 
                     # Re-enable the PIDF controller.
                     pidSetMode(PIDF, "Automatic")
-                    runOnTick(1)
+                    RunOnTick = 1
                 }
 
                 # Restart the Emergency Brake timer.
@@ -1068,7 +1072,7 @@ elseif (RailDriverState == 2)
                     # Disable the PIDF controller.
                     pidSetMode(PIDF, "Manual")
                     pidSetOutput(PIDF, 0)
-                    runOnTick(0)
+                    RunOnTick = 0
 
                     # Set the locomotive's traction motors to 0.
                     semDirectControlTrucks(Trucks, 0)
@@ -1088,7 +1092,7 @@ elseif (RailDriverState == 2)
 
                     # Re-enable the PIDF controller.
                     pidSetMode(PIDF, "Automatic")
-                    runOnTick(1)
+                    RunOnTick = 1
 
                     # Set the locomotive's traction motors to 0.
                     semDirectControlTrucks(Trucks, 0)
@@ -1122,7 +1126,7 @@ elseif (RailDriverState == 2)
             }
         }
         runOnKeys(TrainDriver, 0)
-        runOnTick(0)
+        RunOnTick = 0
 
         # Unregister CLI controls & update commands.
         cliUnregisterCommand(CLI, "controls")
