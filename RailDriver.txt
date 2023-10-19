@@ -1036,12 +1036,12 @@ elseif (RailDriverState == 2)
                 semFreezeTrain()
                 semDirectControlBrakes(Trucks, 1)
 
-            # Set the Emergency Brake state to 0.
-            EmBrakeState = 0
+                # Set the Emergency Brake state to 0.
+                EmBrakeState = 0
 
-            # Display an error message.
-            error("The train has been frozen due to a non-recoverable fault.")
-        }
+                # Display an error message.
+                error("The train has been frozen due to a non-recoverable fault.")
+            }
 
             # Emergency Brake state 6.
             # This state is for tuning the Emergency Brake.
@@ -1116,31 +1116,31 @@ elseif (RailDriverState == 2)
         catch(Exception)
         {
 
-        # Disable RailDriver.
-        local Timers = getTimers()
-        for (I = 1, Timers:count())
-        {
-            if (Timers[I, string] == speedometerGetClockId(Speedo))
+            # Disable RailDriver.
+            local Timers = getTimers()
+            for (I = 1, Timers:count())
             {
-                continue
+                if (Timers[I, string] == speedometerGetClockId(Speedo))
+                {
+                    continue
+                }
+                else
+                {
+                    stoptimer(Timers[I, string])
+                }
             }
-            else
+            RunOnKeys = 0
+            RunOnTick = 0
+
+            # Unregister CLI controls & update commands.
+            cliUnregisterCommand(CLI, "controls")
+            cliUnregisterCommand(CLI, "update")
+
+            # Unlock the RailDriver, so that it can be manually reset.
+            if (semE2IsLocked())
             {
-                stoptimer(Timers[I, string])
+                semUnlockE2()
             }
-        }
-        RunOnKeys = 0
-        RunOnTick = 0
-
-        # Unregister CLI controls & update commands.
-        cliUnregisterCommand(CLI, "controls")
-        cliUnregisterCommand(CLI, "update")
-
-        # Unlock the RailDriver, so that it can be manually reset.
-        if (semE2IsLocked())
-        {
-            semUnlockE2()
-        }
 
             printColor(vec(255, 0, 0), "[RailDriver | EmBrake | Fatal Error]", vec(255, 255, 255), ": " + Exception)
         }
