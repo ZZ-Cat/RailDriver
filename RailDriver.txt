@@ -26,7 +26,7 @@
 @persist HillClimbDescentData:array
 @persist EmBrakeState EmBrakeThisSpeed EmBrakeLastSpeed EmBrakeObserverTickInterval EmBrakePCFaultTimeoutSet
 @persist Speed SpeedAbs SpeedMPH
-@persist DupeTickInterval DupeIsLoading DupeIsFinished RailDriverState
+@persist DupeTickInterval DupeIsLoading DupeIsFinished RailDriverState RadioControlMode
 @persist [RunOnKeys RunOnTick]:number
 @outputs Debugger:table DbgAcceleration:vector [DbgAngularVelocity DbgOrientation]:angle DbgGradient DbgHillClimbDescentFF
 @strict
@@ -214,6 +214,7 @@ if (RailDriverState == 1)
         # Brake = 1
         EmergencyBrake = 0
         EmBrakePCFaultTimeoutSet = 0
+        RadioControlMode = 0
 
         # Initialize the PIDF Controller.
         PIDF = pidCreateInstance()
@@ -729,125 +730,138 @@ elseif (RailDriverState == 2)
 
     if (RunOnKeys != 0)
     {
-        event keyPressed(_:entity, _:string, _:number, _:string)
+        event keyPressed(Player:entity, _:string, _:number, _:string)
         {
-            try
+            # Check if the player is the Train Driver.
+            if (Player == TrainDriver)
             {
-                if (playerControlsUpdate(PlayerControls))
+                if (Player:inVehicle() != 0)
                 {
-                    if (!playerControlsValid(PlayerControls, Speed))
+                    try
                     {
-                        error(playerControlsGetFaultMessage(PlayerControls))
-                    }
-
-                    if (playerControlsDirectionIsUpdated(PlayerControls))
-                    {
-                        Direction = playerControlsGetDirection(PlayerControls)
-
-                        # Set the PIDF controller's direction.
-                        pidSetDirection(PIDF, Direction)
-
-                        # Set the Direction input to the Hill Climb/Descent Feedforward data.
-                        HillClimbDescentData[3, number] = Direction
-
-                        # Clear the Direction is Updated flag.
-                        playerControlsClearDirectionIsUpdated(PlayerControls)
-                    }
-
-                    if (playerControlsThrottleIsUpdated(PlayerControls))
-                    {
-                        # Get the current throttle value.
-                        Throttle = playerControlsGetThrottle(PlayerControls)
-
-                        # Get the current velocity setpoint & convert it from miles per hour to Garry's Mod units.
-                        local VelocitySetpoint = playerControlsGetThrottleMap(PlayerControls, "Velocity Setpoint", Throttle)
-                        local VelocitySetpointGM = VelocitySetpoint * 17.6
-
-                        # Set the PIDF controller's setpoint.
-                        pidSetFeedforward(PIDF, "Throttle", VelocitySetpointGM)
-                        pidSetSetPoint(PIDF, VelocitySetpointGM)
-
-                        # Set the Velocity Setpoint input to the Hill Climb/Descent Feedforward data.
-                        HillClimbDescentData[4, number] = VelocitySetpointGM
-
-                        # Clear the Throttle is Updated flag.
-                        playerControlsClearThrottleIsUpdated(PlayerControls)
-                    }
-
-                    if (playerControlsBrakeIsUpdated(PlayerControls))
-                    {
-                        # Brake = playerControlsGetBrake(PlayerControls)
-
-                        # Brake currently is not used.
-                        # So, I'm gonna let it silently do nothing. =^/.~=
-
-                        # Clear the Brake is Updated flag.
-                        playerControlsClearBrakeIsUpdated(PlayerControls)
-                    }
-
-                    if (playerControlsEmergencyBrakeIsUpdated(PlayerControls))
-                    {
-                        EmergencyBrake = playerControlsGetEmergencyBrake(PlayerControls)
-
-                        # If the Emergency Brake is pressed, set the controller's setpoint to 0.
-                        if (EmergencyBrake)
+                        if (playerControlsUpdate(PlayerControls))
                         {
-                            # Initialize the Emergency Brake Observer.
-                            # The Emergency Brake's Observer Interval is 2 Hz.
-                            EmBrakeState = 1
-                            EmBrakeObserverTickInterval = 1000 / 2
-                            timer("Emergency Brake", tickInterval())
+                            if (!playerControlsValid(PlayerControls, Speed))
+                            {
+                                error(playerControlsGetFaultMessage(PlayerControls))
+                            }
+
+                            if (playerControlsDirectionIsUpdated(PlayerControls))
+                            {
+                                Direction = playerControlsGetDirection(PlayerControls)
+
+                                # Set the PIDF controller's direction.
+                                pidSetDirection(PIDF, Direction)
+
+                                # Set the Direction input to the Hill Climb/Descent Feedforward data.
+                                HillClimbDescentData[3, number] = Direction
+
+                                # Clear the Direction is Updated flag.
+                                playerControlsClearDirectionIsUpdated(PlayerControls)
+                            }
+
+                            if (playerControlsThrottleIsUpdated(PlayerControls))
+                            {
+                                # Get the current throttle value.
+                                Throttle = playerControlsGetThrottle(PlayerControls)
+
+                                # Get the current velocity setpoint & convert it from miles per hour to Garry's Mod units.
+                                local VelocitySetpoint = playerControlsGetThrottleMap(PlayerControls, "Velocity Setpoint", Throttle)
+                                local VelocitySetpointGM = VelocitySetpoint * 17.6
+
+                                # Set the PIDF controller's setpoint.
+                                pidSetFeedforward(PIDF, "Throttle", VelocitySetpointGM)
+                                pidSetSetPoint(PIDF, VelocitySetpointGM)
+
+                                # Set the Velocity Setpoint input to the Hill Climb/Descent Feedforward data.
+                                HillClimbDescentData[4, number] = VelocitySetpointGM
+
+                                # Clear the Throttle is Updated flag.
+                                playerControlsClearThrottleIsUpdated(PlayerControls)
+                            }
+
+                            if (playerControlsBrakeIsUpdated(PlayerControls))
+                            {
+                                # Brake = playerControlsGetBrake(PlayerControls)
+
+                                # Brake currently is not used.
+                                # So, I'm gonna let it silently do nothing. =^/.~=
+
+                                # Clear the Brake is Updated flag.
+                                playerControlsClearBrakeIsUpdated(PlayerControls)
+                            }
+
+                            if (playerControlsEmergencyBrakeIsUpdated(PlayerControls))
+                            {
+                                EmergencyBrake = playerControlsGetEmergencyBrake(PlayerControls)
+
+                                # If the Emergency Brake is pressed, set the controller's setpoint to 0.
+                                if (EmergencyBrake)
+                                {
+                                    # Initialize the Emergency Brake Observer.
+                                    # The Emergency Brake's Observer Interval is 2 Hz.
+                                    EmBrakeState = 1
+                                    EmBrakeObserverTickInterval = 1000 / 2
+                                    timer("Emergency Brake", tickInterval())
+                                }
+
+                                # Clear the Emergency Brake is Updated flag.
+                                playerControlsClearEmergencyBrakeIsUpdated(PlayerControls)
+                            }
+                        }
+                    }
+
+                    catch (Exception)
+                    {
+                        local ErrorColor = vec(255, 0, 0)
+                        local ErrorText = "[RailDriver | PlyCtrls | Error]"
+
+                        if (Exception:find("Fault Cleared."))
+                        {
+                            ErrorColor = vec(0, 255, 0)
+                            ErrorText = "[RailDriver | PlyCtrls | Fault Cleared]"
+
+                            if (EmBrakePCFaultTimeoutSet)
+                            {
+                                # Clear the Emergency Brake Observer.
+                                stoptimer("Emergency Brake")
+                                EmBrakeState = 0
+
+                                # Clear the Emergency Brake is Active flag.
+                                playerControlsClearEmergencyBrakeIsActive(PlayerControls)
+                            }
                         }
 
-                        # Clear the Emergency Brake is Updated flag.
-                        playerControlsClearEmergencyBrakeIsUpdated(PlayerControls)
-                    }
-                }
-            }
+                        else
+                        {
+                            if (!playerControlsEmergencyBrakeIsActive(PlayerControls))
+                            {
+                                if (!EmBrakePCFaultTimeoutSet)
+                                {
+                                    # Initialize the Emergency Brake Observer.
+                                    # The Emergency Brake's Observer Interval is 2 Hz.
+                                    # The initial timeout is 5 seconds, to give the player time to reset the fault.
+                                    # After the timeout, the Emergency Brake will be automatically applied.
+                                    EmBrakeState = 1
+                                    EmBrakeObserverTickInterval = 1000 / 2
+                                    timer("Emergency Brake", 5000)
+                                    EmBrakePCFaultTimeoutSet = 1
 
-            catch (Exception)
-            {
-                local ErrorColor = vec(255, 0, 0)
-                local ErrorText = "[RailDriver | PlyCtrls | Error]"
+                                    # Set the Emergency Brake to active.
+                                    playerControlsSetEmergencyBrakeActive(PlayerControls)
+                                }
+                            }
+                        }
 
-                if (Exception:find("Fault Cleared."))
-                {
-                    ErrorColor = vec(0, 255, 0)
-                    ErrorText = "[RailDriver | PlyCtrls | Fault Cleared]"
-
-                    if (EmBrakePCFaultTimeoutSet)
-                    {
-                        # Clear the Emergency Brake Observer.
-                        stoptimer("Emergency Brake")
-                        EmBrakeState = 0
-
-                        # Clear the Emergency Brake is Active flag.
-                        playerControlsClearEmergencyBrakeIsActive(PlayerControls)
+                        printColor(ErrorColor, ErrorText, vec(255, 255, 255), ": " + Exception)
                     }
                 }
 
                 else
                 {
-                    if (!playerControlsEmergencyBrakeIsActive(PlayerControls))
-                    {
-                        if (!EmBrakePCFaultTimeoutSet)
-                        {
-                            # Initialize the Emergency Brake Observer.
-                            # The Emergency Brake's Observer Interval is 2 Hz.
-                            # The initial timeout is 5 seconds, to give the player time to reset the fault.
-                            # After the timeout, the Emergency Brake will be automatically applied.
-                            EmBrakeState = 1
-                            EmBrakeObserverTickInterval = 1000 / 2
-                            timer("Emergency Brake", 5000)
-                            EmBrakePCFaultTimeoutSet = 1
-
-                            # Set the Emergency Brake to active.
-                            playerControlsSetEmergencyBrakeActive(PlayerControls)
-                        }
-                    }
+                    if (RadioControlMode != 0)
+                    {}
                 }
-
-                printColor(ErrorColor, ErrorText, vec(255, 255, 255), ": " + Exception)
             }
         }
     }
